@@ -1,6 +1,10 @@
 const API_KEY = "BGWSwA.NpfizA:we2gmPkZe-Bwj8v07GEV1rLkjp8bl3xP7o8ecGIpFYs";
 const CHANNEL_NAME = "floor_game";
 
+const urlParams = new URLSearchParams(window.location.search);
+const mode = urlParams.get('mode') || 'master';
+const isMaster = mode === 'master';
+
 const imgEl = document.getElementById("dessert-img");
 const placeholder = document.getElementById("image-placeholder");
 const answerEl = document.getElementById("answer-area");
@@ -47,7 +51,7 @@ let dessertFiles = [
 let t1 = 20.0, t2 = 20.0, activePlayer = 0, interval = null;
 let firstPress = true, dessertQueue = [], currentDessert = "", previousDessert = "", gameOver = false;
 
-// Ably realtime
+// Ably Realtime
 const ably = new Ably.Realtime.Promise({ authUrl: `/ably-auth?key=${API_KEY}` });
 const channel = ably.channels.get(CHANNEL_NAME);
 
@@ -92,33 +96,49 @@ function sendState(){
   channel.publish("update", state);
 }
 
-btn.addEventListener("click",()=>{
-  if(gameOver) return;
-  if(firstPress){
-    firstPress=false; answerEl.textContent="";
-    currentDessert = nextDessert();
-    imgEl.src=currentDessert; imgEl.style.display="block"; placeholder.style.display="none";
-    startPlayer(1); sendState(); return;
-  }
-  const prevName = loadNextDessert();
-  if(prevName) answerEl.textContent = prevName;
-  if(activePlayer===1) startPlayer(2); else startPlayer(1);
-  sendState();
-});
+if(isMaster){
+  btn.addEventListener("click",()=>{
+    if(gameOver) return;
+    if(firstPress){
+      firstPress=false; answerEl.textContent="";
+      currentDessert = nextDessert();
+      imgEl.src=currentDessert; imgEl.style.display="block"; placeholder.style.display="none";
+      startPlayer(1); sendState(); return;
+    }
+    const prevName = loadNextDessert();
+    if(prevName) answerEl.textContent = prevName;
+    if(activePlayer===1) startPlayer(2); else startPlayer(1);
+    sendState();
+  });
 
-let resetClicks=0, resetTimer=null;
-resetBtn.addEventListener("click",()=>{
-  resetClicks++;
-  if(resetTimer) clearTimeout(resetTimer);
-  resetTimer=setTimeout(()=>{
-    if(resetClicks>=2){player1NameEl.value="Player 1"; player2NameEl.value="Player 2";}
-    resetClicks=0;
-  },300);
-  clearInterval(interval); t1=20; t2=20;
-  timer1El.textContent="20.0"; timer2El.textContent="20.0";
-  firstPress=true; activePlayer=0; gameOver=false;
-  answerEl.textContent=""; imgEl.src=""; imgEl.style.display="none"; placeholder.style.display="block";
-  initDessertQueue(); sendState();
+  let resetClicks=0, resetTimer=null;
+  resetBtn.addEventListener("click",()=>{
+    resetClicks++;
+    if(resetTimer) clearTimeout(resetTimer);
+    resetTimer=setTimeout(()=>{
+      if(resetClicks>=2){player1NameEl.value="Player 1"; player2NameEl.value="Player 2";}
+      resetClicks=0;
+    },300);
+    clearInterval(interval); t1=20; t2=20;
+    timer1El.textContent="20.0"; timer2El.textContent="20.0";
+    firstPress=true; activePlayer=0; gameOver=false;
+    answerEl.textContent=""; imgEl.src=""; imgEl.style.display="none"; placeholder.style.display="block";
+    initDessertQueue(); sendState();
+  });
+} else {
+  // Slave disables buttons
+  btn.style.display="none";
+  resetBtn.style.display="none";
+}
+
+// Slave subscribes to Ably
+channel.subscribe("update", state=>{
+  timer1El.textContent = state.t1.toFixed(1);
+  timer2El.textContent = state.t2.toFixed(1);
+  if(state.currentDessert){ imgEl.src = state.currentDessert; imgEl.style.display="block"; placeholder.style.display="none"; }
+  answerEl.textContent = state.answer;
+  player1NameEl.value = state.player1Name || player1NameEl.value;
+  player2NameEl.value = state.player2Name || player2NameEl.value;
 });
 
 initDessertQueue(); imgEl.style.display="none"; placeholder.style.display="block";
