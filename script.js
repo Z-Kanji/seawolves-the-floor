@@ -1,4 +1,4 @@
-// Dessert list
+// Dessert list (updated chocolate chip cookie to .jpg)
 let dessertFiles = [
   "/seawolves-the-floor/apple_pie.jpg",
   "/seawolves-the-floor/banana_pudding.jpg",
@@ -7,7 +7,7 @@ let dessertFiles = [
   "/seawolves-the-floor/caramel_apple.jpg",
   "/seawolves-the-floor/carrot_cake.jpg",
   "/seawolves-the-floor/cheesecake.jpg",
-  "/seawolves-the-floor/chocolate_chip_cookie.jpeg",
+  "/seawolves-the-floor/chocolate_chip_cookie.jpg",
   "/seawolves-the-floor/chocolate_cake.jpg",
   "/seawolves-the-floor/chocolate_pudding.jpg",
   "/seawolves-the-floor/creme_brulee.jpg",
@@ -42,14 +42,15 @@ const timer2El = document.querySelector("#timer2");
 const player1NameEl = document.getElementById("player1-name");
 const player2NameEl = document.getElementById("player2-name");
 
-// State
+// Game state
 let t1 = 20.0;
 let t2 = 20.0;
-let activePlayer = 0; 
+let activePlayer = 0;
 let interval = null;
 let firstPress = true;
 let dessertQueue = [];
 let currentDessert = "";
+let previousDessert = "";
 
 // Shuffle
 function shuffle(array) {
@@ -64,22 +65,24 @@ function capitalizeWords(str) {
   return str.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// Queue management
+// Initialize queue
 function initDessertQueue() {
   dessertQueue = [...dessertFiles];
   shuffle(dessertQueue);
 }
 
+// Get next dessert
 function nextDessert() {
   if (dessertQueue.length === 0) initDessertQueue();
   return dessertQueue.shift();
 }
 
-// Load dessert
-function loadDessert() {
+// Load next dessert
+function loadNextDessert() {
+  previousDessert = currentDessert;
   currentDessert = nextDessert();
   imgEl.src = currentDessert;
-  return capitalizeWords(currentDessert.split("/").pop().replace(/\.(jpg|jpeg)$/i, ""));
+  return previousDessert ? capitalizeWords(previousDessert.split("/").pop().replace(/\.(jpg|jpeg)$/i, "")) : "";
 }
 
 // Start timer
@@ -111,23 +114,23 @@ function endGame() {
   else answerEl.textContent = "TIE!";
 }
 
-// Button
+// Button click
 btn.addEventListener("click", () => {
   if (firstPress) {
     firstPress = false;
     answerEl.textContent = "";
-    imgEl.src = loadDessert();
+    currentDessert = nextDessert();
+    imgEl.src = currentDessert; // first dessert shown immediately
     startPlayer(1);
     return;
   }
 
-  if (activePlayer === 1) {
-    startPlayer(2);
-    answerEl.textContent = loadDessert();
-  } else if (activePlayer === 2) {
-    startPlayer(1);
-    answerEl.textContent = loadDessert();
-  }
+  // Switch player and show previous dessert name
+  const previousName = loadNextDessert();
+  if (previousName) answerEl.textContent = previousName;
+
+  if (activePlayer === 1) startPlayer(2);
+  else if (activePlayer === 2) startPlayer(1);
 });
 
 // Reset
