@@ -1,47 +1,53 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SBU – The Floor Game</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SBU — The Floor (Master/Slave)</title>
+
+  <!-- styling -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Ably realtime client (CDN) -->
   <script src="https://cdn.ably.io/lib/ably.min-1.js"></script>
 </head>
 <body>
+  <div id="game-container">
 
-<div id="game-container">
-
-  <!-- Image Area -->
-  <div id="image-area">
-    <div id="image-placeholder"></div>
-    <img id="dessert-img" src="" alt="Dessert Image">
-  </div>
-
-  <!-- Lower Third -->
-  <div id="lower-third">
-    <div class="player-block">
-      <input id="player1-name" class="player-name" value="Player 1">
-      <div class="timer-box"><span id="timer1" class="timer">20.0</span></div>
+    <!-- IMAGE AREA -->
+    <div id="image-area">
+      <div id="image-placeholder"></div>
+      <img id="dessert-img" src="" alt="">
     </div>
 
-    <div id="answer-area"></div>
+    <!-- LOWER THIRD -->
+    <div id="lower-third">
+      <div class="player-block">
+        <input id="player1-name" class="player-name" value="Player 1" />
+        <div class="timer-box"><span id="timer1" class="timer">20.0</span></div>
+      </div>
 
-    <div class="player-block">
-      <input id="player2-name" class="player-name" value="Player 2">
-      <div class="timer-box"><span id="timer2" class="timer">20.0</span></div>
+      <div id="answer-area" aria-live="polite"></div>
+
+      <div class="player-block">
+        <input id="player2-name" class="player-name" value="Player 2" />
+        <div class="timer-box"><span id="timer2" class="timer">20.0</span></div>
+      </div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div id="controls">
+      <button id="toggle-btn" aria-label="Start / Toggle">
+        <img src="/seawolves-the-floor/white_wolfhead.png" alt="Seawolves button">
+      </button>
+
+      <button id="reset-btn" aria-label="Reset (double-press quickly)">
+        <!-- circular arrow -->
+        ↻
+      </button>
     </div>
   </div>
 
-  <!-- Controls -->
-  <div id="controls">
-    <button id="toggle-btn">
-      <img src="/seawolves-the-floor/white_wolfhead.png" alt="Start Button">
-    </button>
-    <button id="reset-btn">↻</button>
-  </div>
-
-</div>
-
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
