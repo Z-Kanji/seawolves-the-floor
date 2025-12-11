@@ -1,35 +1,35 @@
-// Image list (full GitHub paths)
+// Dessert list (lowercase, underscores)
 let dessertFiles = [
-  "/seawolves-the-floor/Apple Pie.jpg",
-  "/seawolves-the-floor/Banana Pudding.jpg",
-  "/seawolves-the-floor/Banana Split.jpg",
-  "/seawolves-the-floor/Brownie.jpg",
-  "/seawolves-the-floor/Caramel Apple.jpg",
-  "/seawolves-the-floor/Carrot Cake.jpg",
-  "/seawolves-the-floor/Cheesecake.jpg",
-  "/seawolves-the-floor/Chocolate Chip Cookie.jpg",
-  "/seawolves-the-floor/Chocolate Cake.jpg",
-  "/seawolves-the-floor/Chocolate Pudding.jpg",
-  "/seawolves-the-floor/Creme Brulee.jpg",
-  "/seawolves-the-floor/Cupcake.jpg",
-  "/seawolves-the-floor/Doughnut.jpg",
-  "/seawolves-the-floor/Eclair.jpg",
-  "/seawolves-the-floor/Frozen Yogurt.jpg",
-  "/seawolves-the-floor/Fudge.jpg",
-  "/seawolves-the-floor/Ice Cream Sundae.jpg",
-  "/seawolves-the-floor/Ice Cream.jpg",
-  "/seawolves-the-floor/Key Lime Pie.jpg",
-  "/seawolves-the-floor/Milkshake.jpg",
-  "/seawolves-the-floor/Peach Cobbler.jpg",
-  "/seawolves-the-floor/Pecan Pie.jpg",
-  "/seawolves-the-floor/Pineapple Upside Down Cake.jpg",
-  "/seawolves-the-floor/Pumpkin Pie.jpg",
-  "/seawolves-the-floor/Red Velvet Cake.jpg",
-  "/seawolves-the-floor/S'more.jpg",
-  "/seawolves-the-floor/Snow Cone.jpg",
-  "/seawolves-the-floor/Strawberry Shortcake.jpg",
-  "/seawolves-the-floor/Tiramisu.jpg",
-  "/seawolves-the-floor/Tres Leches.jpg"
+  "/seawolves-the-floor/apple_pie.jpg",
+  "/seawolves-the-floor/banana_pudding.jpg",
+  "/seawolves-the-floor/banana_split.jpg",
+  "/seawolves-the-floor/brownie.jpg",
+  "/seawolves-the-floor/caramel_apple.jpg",
+  "/seawolves-the-floor/carrot_cake.jpg",
+  "/seawolves-the-floor/cheesecake.jpg",
+  "/seawolves-the-floor/chocolate_chip_cookie.jpeg",
+  "/seawolves-the-floor/chocolate_cake.jpg",
+  "/seawolves-the-floor/chocolate_pudding.jpg",
+  "/seawolves-the-floor/creme_brulee.jpg",
+  "/seawolves-the-floor/cupcake.jpg",
+  "/seawolves-the-floor/doughnut.jpg",
+  "/seawolves-the-floor/eclair.jpg",
+  "/seawolves-the-floor/frozen_yogurt.jpg",
+  "/seawolves-the-floor/fudge.jpg",
+  "/seawolves-the-floor/ice_cream_sundae.jpg",
+  "/seawolves-the-floor/ice_cream.jpg",
+  "/seawolves-the-floor/key_lime_pie.jpg",
+  "/seawolves-the-floor/milkshake.jpg",
+  "/seawolves-the-floor/peach_cobbler.jpg",
+  "/seawolves-the-floor/pecan_pie.jpg",
+  "/seawolves-the-floor/pineapple_upside_down_cake.jpg",
+  "/seawolves-the-floor/pumpkin_pie.jpg",
+  "/seawolves-the-floor/red_velvet_cake.jpg",
+  "/seawolves-the-floor/smores.jpg",
+  "/seawolves-the-floor/snow_cone.jpg",
+  "/seawolves-the-floor/strawberry_shortcake.jpg",
+  "/seawolves-the-floor/tiramisu.jpg",
+  "/seawolves-the-floor/tres_leches.jpg"
 ];
 
 // DOM elements
@@ -65,7 +65,7 @@ imgEl.src = dessertFiles[currentIndex];
 // Format answer
 function formatAnswer(path) {
   let file = path.split("/").pop();
-  return file.replace(".jpg", "").trim();
+  return file.replace(".jpg", "").replace(/_/g, " ").trim();
 }
 
 // Timers
