@@ -1,4 +1,4 @@
-// Dessert list (updated chocolate chip cookie to .jpg)
+// Dessert list
 let dessertFiles = [
   "/seawolves-the-floor/apple_pie.jpg",
   "/seawolves-the-floor/banana_pudding.jpg",
@@ -52,7 +52,7 @@ let dessertQueue = [];
 let currentDessert = "";
 let previousDessert = "";
 
-// Shuffle
+// Shuffle helper
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -60,12 +60,12 @@ function shuffle(array) {
   }
 }
 
-// Capitalize
+// Capitalize helper
 function capitalizeWords(str) {
   return str.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// Initialize queue
+// Initialize dessert queue
 function initDessertQueue() {
   dessertQueue = [...dessertFiles];
   shuffle(dessertQueue);
@@ -85,7 +85,7 @@ function loadNextDessert() {
   return previousDessert ? capitalizeWords(previousDessert.split("/").pop().replace(/\.(jpg|jpeg)$/i, "")) : "";
 }
 
-// Start timer
+// Start player timer
 function startPlayer(player) {
   activePlayer = player;
   if (interval) clearInterval(interval);
@@ -114,26 +114,25 @@ function endGame() {
   else answerEl.textContent = "TIE!";
 }
 
-// Button click
+// Toggle button
 btn.addEventListener("click", () => {
   if (firstPress) {
     firstPress = false;
     answerEl.textContent = "";
     currentDessert = nextDessert();
-    imgEl.src = currentDessert; // first dessert shown immediately
+    imgEl.src = currentDessert; // first dessert immediately
     startPlayer(1);
     return;
   }
 
-  // Switch player and show previous dessert name
-  const previousName = loadNextDessert();
-  if (previousName) answerEl.textContent = previousName;
+  const prevName = loadNextDessert();
+  if (prevName) answerEl.textContent = prevName;
 
   if (activePlayer === 1) startPlayer(2);
   else if (activePlayer === 2) startPlayer(1);
 });
 
-// Reset
+// Reset button
 let resetClicks = 0;
 let resetTimer = null;
 
