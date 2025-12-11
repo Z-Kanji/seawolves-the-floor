@@ -1,4 +1,4 @@
-// Dessert list
+// Dessert files (chocolate chip cookie fixed to .jpg)
 let dessertFiles = [
   "/seawolves-the-floor/apple_pie.jpg",
   "/seawolves-the-floor/banana_pudding.jpg",
@@ -32,8 +32,9 @@ let dessertFiles = [
   "/seawolves-the-floor/tres_leches.jpg"
 ];
 
-// DOM
+// DOM elements
 const imgEl = document.getElementById("dessert-img");
+const placeholder = document.getElementById("image-placeholder");
 const answerEl = document.getElementById("answer-area");
 const btn = document.getElementById("toggle-btn");
 const resetBtn = document.getElementById("reset-btn");
@@ -82,6 +83,8 @@ function loadNextDessert() {
   previousDessert = currentDessert;
   currentDessert = nextDessert();
   imgEl.src = currentDessert;
+  imgEl.style.display = "block";
+  placeholder.style.display = "none";
   return previousDessert ? capitalizeWords(previousDessert.split("/").pop().replace(/\.(jpg|jpeg)$/i, "")) : "";
 }
 
@@ -120,7 +123,9 @@ btn.addEventListener("click", () => {
     firstPress = false;
     answerEl.textContent = "";
     currentDessert = nextDessert();
-    imgEl.src = currentDessert; // first dessert immediately
+    imgEl.src = currentDessert;
+    imgEl.style.display = "block";
+    placeholder.style.display = "none";
     startPlayer(1);
     return;
   }
@@ -158,10 +163,13 @@ resetBtn.addEventListener("click", () => {
   activePlayer = 0;
   answerEl.textContent = "";
   imgEl.src = "";
+  imgEl.style.display = "none";
+  placeholder.style.display = "block";
 
   initDessertQueue();
 });
 
 // Initialize
 initDessertQueue();
-imgEl.src = ""; // blank before start
+imgEl.style.display = "none";
+placeholder.style.display = "block";
