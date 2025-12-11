@@ -1,188 +1,156 @@
-const DESSERT_FILENAMES = [
-  "Apple Pie.jpg", "Banana Pudding.jpg", "Banana Split.jpg", "Brownie.jpg",
-  "Caramel Apple.jpg", "Carrot Cake.jpg", "Cheesecake.jpg",
-  "Chocolate Chip Cookie.jpg", "Chocolate Cake.jpg", "Chocolate Pudding.jpg",
-  "Creme Brulee.jpg", "Cupcake.jpg", "Doughnut.jpg", "Eclair.jpg",
-  "Frozen Yogurt.jpg", "Fudge.jpg", "Ice Cream Sundae.jpg", "Ice Cream.jpg",
-  "Key Lime Pie.jpg", "Milkshake.jpg", "Peach Cobbler.jpg", "Pecan Pie.jpg",
-  "Pineapple Upside Down Cake.jpg", "Pumpkin Pie.jpg", "Red Velvet Cake.jpg",
-  "S'more.jpg", "Snow Cone.jpg", "Strawberry Shortcake.jpg",
-  "Tiramisu.jpg", "Tres Leches.jpg"
+// Image list (full GitHub paths)
+let dessertFiles = [
+  "/seawolves-the-floor/Apple Pie.jpg",
+  "/seawolves-the-floor/Banana Pudding.jpg",
+  "/seawolves-the-floor/Banana Split.jpg",
+  "/seawolves-the-floor/Brownie.jpg",
+  "/seawolves-the-floor/Caramel Apple.jpg",
+  "/seawolves-the-floor/Carrot Cake.jpg",
+  "/seawolves-the-floor/Cheesecake.jpg",
+  "/seawolves-the-floor/Chocolate Chip Cookie.jpg",
+  "/seawolves-the-floor/Chocolate Cake.jpg",
+  "/seawolves-the-floor/Chocolate Pudding.jpg",
+  "/seawolves-the-floor/Creme Brulee.jpg",
+  "/seawolves-the-floor/Cupcake.jpg",
+  "/seawolves-the-floor/Doughnut.jpg",
+  "/seawolves-the-floor/Eclair.jpg",
+  "/seawolves-the-floor/Frozen Yogurt.jpg",
+  "/seawolves-the-floor/Fudge.jpg",
+  "/seawolves-the-floor/Ice Cream Sundae.jpg",
+  "/seawolves-the-floor/Ice Cream.jpg",
+  "/seawolves-the-floor/Key Lime Pie.jpg",
+  "/seawolves-the-floor/Milkshake.jpg",
+  "/seawolves-the-floor/Peach Cobbler.jpg",
+  "/seawolves-the-floor/Pecan Pie.jpg",
+  "/seawolves-the-floor/Pineapple Upside Down Cake.jpg",
+  "/seawolves-the-floor/Pumpkin Pie.jpg",
+  "/seawolves-the-floor/Red Velvet Cake.jpg",
+  "/seawolves-the-floor/S'more.jpg",
+  "/seawolves-the-floor/Snow Cone.jpg",
+  "/seawolves-the-floor/Strawberry Shortcake.jpg",
+  "/seawolves-the-floor/Tiramisu.jpg",
+  "/seawolves-the-floor/Tres Leches.jpg"
 ];
 
-const dessertImage = document.getElementById("dessertImage");
-const answerReveal = document.getElementById("answerReveal");
-const mainButton = document.getElementById("mainButton");
-const resetBtn = document.getElementById("resetBtn");
+// DOM elements
+const imgEl = document.getElementById("dessert-img");
+const answerEl = document.getElementById("answer-area");
+const btn = document.getElementById("toggle-btn");
+const resetBtn = document.getElementById("reset-btn");
+
 const timer1El = document.getElementById("timer1");
 const timer2El = document.getElementById("timer2");
-const player1NameEl = document.getElementById("player1Name");
-const player2NameEl = document.getElementById("player2Name");
 
-let deck = [];
-let deckIndex = 0;
-let shownFilename = null;
-let gameStarted = false;
-let firstToggleDone = false;
-let activePlayer = null;
-let tickInterval = null;
-let timeLeft = { p1: 20.0, p2: 20.0 };
-let answerTimeout = null;
+let t1 = 20.0;
+let t2 = 20.0;
+let activePlayer = 0; // 0 = not started, 1 = player1, 2 = player2
+let interval = null;
+let firstPress = true;
 
-let lastResetClick = 0;
-const DOUBLE_RESET_WINDOW = 500;
-
-function shuffleArray(arr){
-  for (let i = arr.length - 1; i > 0; i--) {
+// Shuffle function
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-function buildNewDeck(){
-  deck = shuffleArray(DESSERT_FILENAMES.slice());
-  deckIndex = 0;
-}
-
-function imageURLForFilename(filename){
-  return "images/" + encodeURIComponent(filename);
-}
-
-function formatTenths(num){
-  return num.toFixed(1);
-}
-
-function updateTimersDisplay(){
-  timer1El.textContent = formatTenths(timeLeft.p1);
-  timer2El.textContent = formatTenths(timeLeft.p2);
-
-  if (activePlayer === "p1"){
-    timer1El.style.boxShadow = "0 6px 22px rgba(153,0,0,0.35)";
-    timer2El.style.boxShadow = "inset 0 -6px 12px rgba(0,0,0,0.25)";
-  } else if (activePlayer === "p2"){
-    timer2El.style.boxShadow = "0 6px 22px rgba(153,0,0,0.35)";
-    timer1El.style.boxShadow = "inset 0 -6px 12px rgba(0,0,0,0.25)";
-  } else {
-    timer1El.style.boxShadow = "inset 0 -6px 12px rgba(0,0,0,0.25)";
-    timer2El.style.boxShadow = "inset 0 -6px 12px rgba(0,0,0,0.25)";
+    [array[i], array[j]] = [array[j], array[i]];
   }
 }
 
-function showNextImageOnScreen(){
-  if (deckIndex >= deck.length) buildNewDeck();
-  shownFilename = deck[deckIndex];
-  dessertImage.src = imageURLForFilename(shownFilename);
-  deckIndex++;
+// Prepare randomized order
+shuffle(dessertFiles);
+
+// Load first image
+let currentIndex = 0;
+imgEl.src = dessertFiles[currentIndex];
+
+// Format answer
+function formatAnswer(path) {
+  let file = path.split("/").pop();
+  return file.replace(".jpg", "").trim();
 }
 
-function revealAnswerOnce(){
-  if (!shownFilename) return;
-  const label = shownFilename.replace(/\.[^.]+$/, "");
-  answerReveal.textContent = label;
-  answerReveal.classList.remove("hidden");
-  answerReveal.classList.add("show");
+// Timers
+function startPlayer(player) {
+  activePlayer = player;
 
-  if (answerTimeout) clearTimeout(answerTimeout);
-  answerTimeout = setTimeout(() => {
-    answerReveal.classList.remove("show");
-    answerReveal.classList.add("hidden");
-  }, 2500);
-}
+  if (interval) clearInterval(interval);
 
-function endGame(winner){
-  if (tickInterval) clearInterval(tickInterval);
-  tickInterval = null;
-
-  activePlayer = null;
-
-  answerReveal.textContent =
-    `${winner === "p1" ? player1NameEl.value : player2NameEl.value} wins!`;
-  answerReveal.classList.remove("hidden");
-  answerReveal.classList.add("show");
-
-  mainButton.disabled = true;
-}
-
-function startTickLoop(){
-  if (tickInterval) return;
-  tickInterval = setInterval(() => {
-    if (!activePlayer) return;
-    timeLeft[activePlayer] = Math.max(0, +(timeLeft[activePlayer] - 0.1).toFixed(1));
-    updateTimersDisplay();
-
-    if (timeLeft[activePlayer] <= 0){
-      endGame(activePlayer === "p1" ? "p2" : "p1");
+  interval = setInterval(() => {
+    if (activePlayer === 1) {
+      t1 -= 0.1;
+      timer1El.textContent = t1.toFixed(1);
+      if (t1 <= 0) stopGame();
+    } else if (activePlayer === 2) {
+      t2 -= 0.1;
+      timer2El.textContent = t2.toFixed(1);
+      if (t2 <= 0) stopGame();
     }
   }, 100);
 }
 
-function softReset(){
-  if (tickInterval){ clearInterval(tickInterval); tickInterval = null; }
-  if (answerTimeout){ clearTimeout(answerTimeout); answerTimeout = null; }
+// Rotate to next image + show answer
+function showAnswerAndNext() {
+  answerEl.textContent = formatAnswer(dessertFiles[currentIndex]);
 
-  timeLeft = { p1: 20.0, p2: 20.0 };
-  updateTimersDisplay();
+  currentIndex++;
+  if (currentIndex >= dessertFiles.length) return;
 
-  gameStarted = false;
-  firstToggleDone = false;
-  activePlayer = null;
-
-  mainButton.disabled = false;
-
-  answerReveal.classList.remove("show");
-  answerReveal.classList.add("hidden");
-
-  buildNewDeck();
-  showNextImageOnScreen();
+  imgEl.src = dessertFiles[currentIndex];
 }
 
-function hardResetNames(){
-  player1NameEl.value = "Player 1";
-  player2NameEl.value = "Player 2";
+// Stop everything
+function stopGame() {
+  clearInterval(interval);
+  activePlayer = 0;
 }
 
-mainButton.addEventListener("click", () => {
-  if (!gameStarted){
-    gameStarted = true;
-    activePlayer = "p1";
-    startTickLoop();
-    updateTimersDisplay();
+// Handle button press
+btn.addEventListener("click", () => {
+  if (firstPress) {
+    firstPress = false;
+    answerEl.textContent = "";
+    startPlayer(1);
     return;
   }
 
-  revealAnswerOnce();
-  showNextImageOnScreen();
-
-  if (!firstToggleDone) firstToggleDone = true;
-
-  activePlayer = activePlayer === "p1" ? "p2" : "p1";
-  updateTimersDisplay();
-});
-
-resetBtn.addEventListener("click", () => {
-  const now = Date.now();
-  if (now - lastResetClick <= DOUBLE_RESET_WINDOW){
-    softReset();
-    hardResetNames();
-    lastResetClick = 0;
-  } else {
-    softReset();
-    lastResetClick = now;
+  if (activePlayer === 1) {
+    startPlayer(2);
+    showAnswerAndNext();
+  } else if (activePlayer === 2) {
+    startPlayer(1);
+    showAnswerAndNext();
   }
 });
 
-[player1NameEl, player2NameEl].forEach(input => {
-  input.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter") {
-      ev.preventDefault();
-      input.blur();
-    }
-  });
-});
+// Reset logic
+let resetClicks = 0;
+let resetTimer = null;
 
-(function init(){
-  buildNewDeck();
-  showNextImageOnScreen();
-  updateTimersDisplay();
-})();
+resetBtn.addEventListener("click", () => {
+  resetClicks++;
+
+  if (resetTimer) clearTimeout(resetTimer);
+
+  resetTimer = setTimeout(() => {
+    if (resetClicks >= 2) {
+      document.getElementById("player1-name").value = "Player 1";
+      document.getElementById("player2-name").value = "Player 2";
+    }
+
+    resetClicks = 0;
+  }, 300);
+
+  // Reset game state
+  clearInterval(interval);
+  t1 = 20.0;
+  t2 = 20.0;
+  timer1El.textContent = "20.0";
+  timer2El.textContent = "20.0";
+
+  firstPress = true;
+  activePlayer = 0;
+  answerEl.textContent = "";
+
+  shuffle(dessertFiles);
+  currentIndex = 0;
+  imgEl.src = dessertFiles[currentIndex];
+});
