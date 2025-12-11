@@ -1,4 +1,4 @@
-// Dessert list (lowercase, underscores)
+// Dessert list (lowercase, underscores, handle jpeg)
 let dessertFiles = [
   "/seawolves-the-floor/apple_pie.jpg",
   "/seawolves-the-floor/banana_pudding.jpg",
@@ -32,20 +32,24 @@ let dessertFiles = [
   "/seawolves-the-floor/tres_leches.jpg"
 ];
 
-// DOM elements
+// DOM
 const imgEl = document.getElementById("dessert-img");
 const answerEl = document.getElementById("answer-area");
 const btn = document.getElementById("toggle-btn");
 const resetBtn = document.getElementById("reset-btn");
+const timer1El = document.querySelector("#timer1 .timer");
+const timer2El = document.querySelector("#timer2 .timer");
+const player1NameEl = document.getElementById("player1-name");
+const player2NameEl = document.getElementById("player2-name");
 
-const timer1El = document.getElementById("timer1");
-const timer2El = document.getElementById("timer2");
-
+// Game state
 let t1 = 20.0;
 let t2 = 20.0;
-let activePlayer = 0; // 0 = not started, 1 = player1, 2 = player2
+let activePlayer = 0; // 0 = not started, 1 = P1, 2 = P2
 let interval = null;
 let firstPress = true;
+let currentIndex = 0;
+let dessertQueue = [];
 
 // Shuffle function
 function shuffle(array) {
@@ -55,91 +59,95 @@ function shuffle(array) {
   }
 }
 
-// Prepare randomized order
-shuffle(dessertFiles);
-
-// Load first image
-let currentIndex = 0;
-imgEl.src = dessertFiles[currentIndex];
-
-// Format answer
-function formatAnswer(path) {
-  let file = path.split("/").pop();
-  return file.replace(".jpg", "").replace(/_/g, " ").trim();
+// Capitalize function
+function capitalizeWords(str) {
+  return str.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// Timers
+// Initialize queue
+function initDessertQueue() {
+  dessertQueue = [...dessertFiles];
+  shuffle(dessertQueue);
+}
+
+// Get next dessert
+function nextDessert() {
+  if (dessertQueue.length === 0) initDessertQueue();
+  return dessertQueue.shift();
+}
+
+// Load dessert image
+function loadDessert() {
+  const file = nextDessert();
+  imgEl.src = file;
+  return capitalizeWords(file.split("/").pop().replace(/\.(jpg|jpeg)$/i, ""));
+}
+
+// Start a player timer
 function startPlayer(player) {
   activePlayer = player;
-
   if (interval) clearInterval(interval);
 
   interval = setInterval(() => {
     if (activePlayer === 1) {
       t1 -= 0.1;
+      if (t1 < 0) t1 = 0;
       timer1El.textContent = t1.toFixed(1);
-      if (t1 <= 0) stopGame();
+      if (t1 <= 0) endGame();
     } else if (activePlayer === 2) {
       t2 -= 0.1;
+      if (t2 < 0) t2 = 0;
       timer2El.textContent = t2.toFixed(1);
-      if (t2 <= 0) stopGame();
+      if (t2 <= 0) endGame();
     }
   }, 100);
 }
 
-// Rotate to next image + show answer
-function showAnswerAndNext() {
-  answerEl.textContent = formatAnswer(dessertFiles[currentIndex]);
-
-  currentIndex++;
-  if (currentIndex >= dessertFiles.length) return;
-
-  imgEl.src = dessertFiles[currentIndex];
-}
-
-// Stop everything
-function stopGame() {
+// End game
+function endGame() {
   clearInterval(interval);
   activePlayer = 0;
+  if (t1 > t2) answerEl.textContent = `${player1NameEl.value} WINS!`;
+  else if (t2 > t1) answerEl.textContent = `${player2NameEl.value} WINS!`;
+  else answerEl.textContent = "TIE!";
 }
 
-// Handle button press
+// Button click
 btn.addEventListener("click", () => {
   if (firstPress) {
     firstPress = false;
     answerEl.textContent = "";
+    const dessertName = loadDessert();
+    imgEl.src = nextDessert(); // First image shown after start
     startPlayer(1);
     return;
   }
 
   if (activePlayer === 1) {
     startPlayer(2);
-    showAnswerAndNext();
+    answerEl.textContent = loadDessert();
   } else if (activePlayer === 2) {
     startPlayer(1);
-    showAnswerAndNext();
+    answerEl.textContent = loadDessert();
   }
 });
 
-// Reset logic
+// Reset button
 let resetClicks = 0;
 let resetTimer = null;
 
 resetBtn.addEventListener("click", () => {
   resetClicks++;
-
   if (resetTimer) clearTimeout(resetTimer);
 
   resetTimer = setTimeout(() => {
     if (resetClicks >= 2) {
-      document.getElementById("player1-name").value = "Player 1";
-      document.getElementById("player2-name").value = "Player 2";
+      player1NameEl.value = "Player 1";
+      player2NameEl.value = "Player 2";
     }
-
     resetClicks = 0;
   }, 300);
 
-  // Reset game state
   clearInterval(interval);
   t1 = 20.0;
   t2 = 20.0;
@@ -149,8 +157,11 @@ resetBtn.addEventListener("click", () => {
   firstPress = true;
   activePlayer = 0;
   answerEl.textContent = "";
+  imgEl.src = "";
 
-  shuffle(dessertFiles);
-  currentIndex = 0;
-  imgEl.src = dessertFiles[currentIndex];
+  initDessertQueue();
 });
+
+// Initialize
+initDessertQueue();
+imgEl.src = ""; // Blank before start
