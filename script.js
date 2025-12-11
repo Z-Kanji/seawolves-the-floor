@@ -1,4 +1,4 @@
-// Dessert list (lowercase, underscores, handle jpeg)
+// Dessert list
 let dessertFiles = [
   "/seawolves-the-floor/apple_pie.jpg",
   "/seawolves-the-floor/banana_pudding.jpg",
@@ -37,21 +37,21 @@ const imgEl = document.getElementById("dessert-img");
 const answerEl = document.getElementById("answer-area");
 const btn = document.getElementById("toggle-btn");
 const resetBtn = document.getElementById("reset-btn");
-const timer1El = document.querySelector("#timer1 .timer");
-const timer2El = document.querySelector("#timer2 .timer");
+const timer1El = document.querySelector("#timer1");
+const timer2El = document.querySelector("#timer2");
 const player1NameEl = document.getElementById("player1-name");
 const player2NameEl = document.getElementById("player2-name");
 
-// Game state
+// State
 let t1 = 20.0;
 let t2 = 20.0;
-let activePlayer = 0; // 0 = not started, 1 = P1, 2 = P2
+let activePlayer = 0; 
 let interval = null;
 let firstPress = true;
-let currentIndex = 0;
 let dessertQueue = [];
+let currentDessert = "";
 
-// Shuffle function
+// Shuffle
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -59,31 +59,30 @@ function shuffle(array) {
   }
 }
 
-// Capitalize function
+// Capitalize
 function capitalizeWords(str) {
   return str.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// Initialize queue
+// Queue management
 function initDessertQueue() {
   dessertQueue = [...dessertFiles];
   shuffle(dessertQueue);
 }
 
-// Get next dessert
 function nextDessert() {
   if (dessertQueue.length === 0) initDessertQueue();
   return dessertQueue.shift();
 }
 
-// Load dessert image
+// Load dessert
 function loadDessert() {
-  const file = nextDessert();
-  imgEl.src = file;
-  return capitalizeWords(file.split("/").pop().replace(/\.(jpg|jpeg)$/i, ""));
+  currentDessert = nextDessert();
+  imgEl.src = currentDessert;
+  return capitalizeWords(currentDessert.split("/").pop().replace(/\.(jpg|jpeg)$/i, ""));
 }
 
-// Start a player timer
+// Start timer
 function startPlayer(player) {
   activePlayer = player;
   if (interval) clearInterval(interval);
@@ -112,13 +111,12 @@ function endGame() {
   else answerEl.textContent = "TIE!";
 }
 
-// Button click
+// Button
 btn.addEventListener("click", () => {
   if (firstPress) {
     firstPress = false;
     answerEl.textContent = "";
-    const dessertName = loadDessert();
-    imgEl.src = nextDessert(); // First image shown after start
+    imgEl.src = loadDessert();
     startPlayer(1);
     return;
   }
@@ -132,7 +130,7 @@ btn.addEventListener("click", () => {
   }
 });
 
-// Reset button
+// Reset
 let resetClicks = 0;
 let resetTimer = null;
 
@@ -164,4 +162,4 @@ resetBtn.addEventListener("click", () => {
 
 // Initialize
 initDessertQueue();
-imgEl.src = ""; // Blank before start
+imgEl.src = ""; // blank before start
