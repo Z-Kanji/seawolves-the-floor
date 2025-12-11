@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>The Floor: SBU Dessert</title>
+    <link rel="stylesheet" href="./style.css">
+
+  </head>
+    
+  <body>
+  <div class="game-container">
+
+  <!-- Image display -->
+  <div class="image-area" id="imageArea">
+    <img id="dessertImage" src="" alt="">
+  </div>
+
+  <!-- Lower third -->
+  <div class="lower-third">
+    <div class="player-col">
+      <input id="player1Name" class="player-name" value="Player 1" />
+      <div id="timer1" class="timer">20.0</div>
+    </div>
+
+    <div id="answerReveal" class="answer hidden" aria-live="polite"></div>
+
+    <div class="player-col">
+      <input id="player2Name" class="player-name" value="Player 2" />
+      <div id="timer2" class="timer">20.0</div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="buttons">
+
+    <!-- MAIN BUTTON = the wolfhead image -->
+    <button id="mainButton" class="img-btn" aria-pressed="false">
+      <img src="White Wolfhead No TM.png" alt="Start/Toggle">
+    </button>
+
+    <!-- circular reset button -->
+    <button id="resetBtn" class="reset-circle" title="Reset (double-press quickly)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M21 12a9 9 0 10-2.62 6.0" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M21 3v6h-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+  </div>
+</div>
+    <script  src="./script.js"></script>
+
+  </body>
+  
+</html>
