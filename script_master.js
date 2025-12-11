@@ -1,5 +1,5 @@
 const API_KEY = "BGWSwA.NpfizA:we2gmPkZe-Bwj8v07GEV1rLkjp8bl3xP7o8ecGIpFYs";
-const BASE_URL = "https://push-api.ably.io"; // Example API endpoint
+const CHANNEL_NAME = "floor_game";
 
 const imgEl = document.getElementById("dessert-img");
 const placeholder = document.getElementById("image-placeholder");
@@ -44,70 +44,66 @@ let dessertFiles = [
   "/seawolves-the-floor/tres_leches.jpg"
 ];
 
-let t1=20.0, t2=20.0, activePlayer=0, interval=null;
-let firstPress=true, dessertQueue=[], currentDessert="", previousDessert="", gameOver=false;
+let t1 = 20.0, t2 = 20.0, activePlayer = 0, interval = null;
+let firstPress = true, dessertQueue = [], currentDessert = "", previousDessert = "", gameOver = false;
+
+// Ably realtime
+const ably = new Ably.Realtime.Promise({ authUrl: `/ably-auth?key=${API_KEY}` });
+const channel = ably.channels.get(CHANNEL_NAME);
 
 function shuffle(array){for(let i=array.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[array[i],array[j]]=[array[j],array[i]];}}
-function initDessertQueue(){dessertQueue=[...dessertFiles];shuffle(dessertQueue);}
-function nextDessert(){if(dessertQueue.length===0)initDessertQueue();return dessertQueue.shift();}
+function initDessertQueue(){dessertQueue=[...dessertFiles]; shuffle(dessertQueue);}
+function nextDessert(){if(dessertQueue.length===0) initDessertQueue(); return dessertQueue.shift();}
 function capitalizeWords(str){return str.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase());}
 
 function loadNextDessert(){
-  previousDessert=currentDessert;
-  currentDessert=nextDessert();
-  imgEl.src=currentDessert;
-  imgEl.style.display="block";
-  placeholder.style.display="none";
+  previousDessert = currentDessert;
+  currentDessert = nextDessert();
+  imgEl.src = currentDessert;
+  imgEl.style.display = "block";
+  placeholder.style.display = "none";
   return previousDessert?capitalizeWords(previousDessert.split("/").pop().replace(/\.(jpg|jpeg)$/i,"")):"";
 }
 
 function startPlayer(player){
-  activePlayer=player;
+  activePlayer = player;
   if(interval) clearInterval(interval);
-  interval=setInterval(()=>{
-    if(activePlayer===1){t1-=0.1;if(t1<0)t1=0; timer1El.textContent=t1.toFixed(1); if(t1<=0) endGame();}
-    if(activePlayer===2){t2-=0.1;if(t2<0)t2=0; timer2El.textContent=t2.toFixed(1); if(t2<=0) endGame();}
-    sendStateToSlave();
+  interval = setInterval(()=>{
+    if(activePlayer===1){ t1-=0.1; if(t1<0) t1=0; timer1El.textContent=t1.toFixed(1); if(t1<=0) endGame();}
+    if(activePlayer===2){ t2-=0.1; if(t2<0) t2=0; timer2El.textContent=t2.toFixed(1); if(t2<=0) endGame();}
+    sendState();
   },100);
 }
 
 function endGame(){
   clearInterval(interval);
-  activePlayer=0;
-  gameOver=true;
+  activePlayer=0; gameOver=true;
   if(t1>t2) answerEl.textContent=`${player1NameEl.value} WINS!`;
   else if(t2>t1) answerEl.textContent=`${player2NameEl.value} WINS!`;
   else answerEl.textContent="TIE!";
-  sendStateToSlave();
+  sendState();
 }
 
-function sendStateToSlave(){
-  const state={t1,t2,currentDessert,previousDessert,answer:answerEl.textContent,activePlayer,
-    player1Name:player1NameEl.value, player2Name:player2NameEl.value};
-  fetch(`${BASE_URL}/channels/floor_game/publish`,{
-    method:"POST",
-    headers:{"Authorization":"Basic "+btoa(API_KEY),"Content-Type":"application/json"},
-    body:JSON.stringify({name:"update",data:state})
-  });
+function sendState(){
+  const state={
+    t1, t2, currentDessert, previousDessert, answer:answerEl.textContent,
+    activePlayer, player1Name:player1NameEl.value, player2Name:player2NameEl.value
+  };
+  channel.publish("update", state);
 }
 
 btn.addEventListener("click",()=>{
   if(gameOver) return;
   if(firstPress){
-    firstPress=false;
-    answerEl.textContent="";
-    currentDessert=nextDessert();
-    imgEl.src=currentDessert;
-    imgEl.style.display="block";
-    placeholder.style.display="none";
-    startPlayer(1);
-    sendStateToSlave();
-    return;
+    firstPress=false; answerEl.textContent="";
+    currentDessert = nextDessert();
+    imgEl.src=currentDessert; imgEl.style.display="block"; placeholder.style.display="none";
+    startPlayer(1); sendState(); return;
   }
-  const prevName=loadNextDessert();
-  if(prevName) answerEl.textContent=prevName;
+  const prevName = loadNextDessert();
+  if(prevName) answerEl.textContent = prevName;
   if(activePlayer===1) startPlayer(2); else startPlayer(1);
-  sendStateToSlave();
+  sendState();
 });
 
 let resetClicks=0, resetTimer=null;
@@ -118,14 +114,11 @@ resetBtn.addEventListener("click",()=>{
     if(resetClicks>=2){player1NameEl.value="Player 1"; player2NameEl.value="Player 2";}
     resetClicks=0;
   },300);
-  clearInterval(interval);
-  t1=20;t2=20;
+  clearInterval(interval); t1=20; t2=20;
   timer1El.textContent="20.0"; timer2El.textContent="20.0";
   firstPress=true; activePlayer=0; gameOver=false;
   answerEl.textContent=""; imgEl.src=""; imgEl.style.display="none"; placeholder.style.display="block";
-  initDessertQueue();
-  sendStateToSlave();
+  initDessertQueue(); sendState();
 });
 
-initDessertQueue();
-imgEl.style.display="none"; placeholder.style.display="block";
+initDessertQueue(); imgEl.style.display="none"; placeholder.style.display="block";
