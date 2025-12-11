@@ -1,45 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SBU – The Floor Game</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div id="game-container">
+<div id="game-container">
 
-    <div id="image-area">
-      <img id="dessert-img" src="" alt="Dessert Image">
+  <!-- Image Area -->
+  <div id="image-area">
+    <img id="dessert-img" src="" alt="Dessert Image">
+  </div>
+
+  <!-- Lower Third -->
+  <div id="lower-third">
+
+    <div class="player-block">
+      <input id="player1-name" class="player-name" value="Player 1">
+      <div id="timer1" class="timer-box"><span class="timer">20.0</span></div>
     </div>
 
-    <div id="lower-third">
+    <div id="answer-area"></div>
 
-      <div class="player-block">
-        <input id="player1-name" class="player-name" value="Player 1" />
-        <div id="timer1" class="timer">20.0</div>
-      </div>
-
-      <div id="answer-area"></div>
-
-      <div class="player-block">
-        <input id="player2-name" class="player-name" value="Player 2" />
-        <div id="timer2" class="timer">20.0</div>
-      </div>
-
-    </div>
-
-    <div id="controls">
-      <button id="toggle-btn">
-        <img src="/seawolves-the-floor/white_wolfhead.png" alt="Button">
-      </button>
-
-      <button id="reset-btn">↻</button>
+    <div class="player-block">
+      <input id="player2-name" class="player-name" value="Player 2">
+      <div id="timer2" class="timer-box"><span class="timer">20.0</span></div>
     </div>
 
   </div>
 
-  <script src="script.js"></script>
+  <!-- Controls -->
+  <div id="controls">
+    <button id="toggle-btn">
+      <img src="/seawolves-the-floor/white_wolfhead.png" alt="Start Button">
+    </button>
+    <button id="reset-btn">↻</button>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
