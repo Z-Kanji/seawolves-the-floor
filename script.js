@@ -1,26 +1,23 @@
-// Read API key and mode from URL
+// Reads API key and mode from URL. Use links including &key=... and &mode=master|slave
 const urlParams = new URLSearchParams(window.location.search);
-const API_KEY = urlParams.get('key'); // must be provided in the URL
-const mode = urlParams.get('mode') || 'master';
+const API_KEY = urlParams.get('key'); // REQUIRED in URL
+const mode = (urlParams.get('mode') || 'master').toLowerCase();
 const isMaster = mode === 'master';
-
-if(!API_KEY){
-  alert("API key missing from URL. Append ?mode=master&key=YOUR_KEY (or mode=slave).");
-  // still continue but Ably init will fail
-}
 
 // DOM
 const imgEl = document.getElementById("dessert-img");
 const placeholder = document.getElementById("image-placeholder");
 const answerEl = document.getElementById("answer-area");
-const btn = document.getElementById("toggle-btn");
+const toggleBtn = document.getElementById("toggle-btn");
 const resetBtn = document.getElementById("reset-btn");
 const timer1El = document.getElementById("timer1");
 const timer2El = document.getElementById("timer2");
-const player1NameEl = document.getElementById("player1-name");
-const player2NameEl = document.getElementById("player2-name");
+const p1NameEl = document.getElementById("player1-name");
+const p2NameEl = document.getElementById("player2-name");
+const pass1Btn = document.getElementById("pass1");
+const pass2Btn = document.getElementById("pass2");
 
-// Dessert filenames (lowercase + underscores, chocolate chip cookie .jpg)
+// Desserts (use exact paths on your GitHub Pages)
 const dessertFiles = [
   "/seawolves-the-floor/apple_pie.jpg",
   "/seawolves-the-floor/banana_pudding.jpg",
@@ -58,200 +55,235 @@ const dessertFiles = [
 let t1 = 20.0;
 let t2 = 20.0;
 let activePlayer = 0; // 0 none, 1 p1, 2 p2
-let interval = null;
 let firstPress = true;
-let dessertQueue = [];
-let currentDessert = "";   // currently visible image path
-let previousDessert = "";  // previous image path
 let gameOver = false;
+let dessertQueue = [];
+let currentDessert = "";
+let previousDessert = "";
+let passUsed1 = false;
+let passUsed2 = false;
+let tickInterval = null;
 
-// Ably init using key from URL
+// Ably realtime (key from URL)
 let channel = null;
-try {
-  // direct key authentication (client-side). Works for testing but not recommended for public keys.
-  const ably = new Ably.Realtime(API_KEY);
-  channel = ably.channels.get("floor_game");
-  // Subscribe to updates
-  channel.subscribe("update", (msg) => {
-    const state = msg.data;
-    if (!state) return;
-    // Apply state to UI (slave and master both subscribe: master can ignore its own messages)
-    timer1El.textContent = (typeof state.t1 === 'number') ? state.t1.toFixed(1) : timer1El.textContent;
-    timer2El.textContent = (typeof state.t2 === 'number') ? state.t2.toFixed(1) : timer2El.textContent;
-    if (state.currentDessert) {
-      currentDessert = state.currentDessert;
-      imgEl.src = currentDessert;
-      imgEl.style.display = "block";
-      placeholder.style.display = "none";
-    }
-    if (typeof state.answer === 'string') {
-      answerEl.textContent = state.answer;
-    }
-    if (state.player1Name) player1NameEl.value = state.player1Name;
-    if (state.player2Name) player2NameEl.value = state.player2Name;
-    activePlayer = state.activePlayer || activePlayer;
-    // If game over state included, disable master controls
-    if (state.gameOver) {
-      gameOver = true;
-      if (isMaster) disableControlsAfterWin();
-    }
-  });
-} catch (e) {
-  console.error("Ably init failed", e);
-  alert("Realtime init failed. Check API key in URL.");
+if (!API_KEY) {
+  alert("API key missing from URL. Append &key=YOUR_KEY");
+} else {
+  try {
+    const ably = new Ably.Realtime(API_KEY);
+    channel = ably.channels.get("floor_game_seawolves");
+    // Subscribe to updates
+    channel.subscribe("update", (msg) => {
+      const state = msg.data;
+      if (!state) return;
+      // Mirror state on both master and slave (master will safely re-apply its own state)
+      applyState(state);
+    });
+  } catch (e) {
+    console.error("Ably init failed", e);
+    alert("Realtime init failed. Check API key in URL.");
+  }
 }
 
-/* Utility helpers */
-function shuffle(array){ for(let i=array.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [array[i],array[j]]=[array[j],array[i]]; } }
-function initDessertQueue(){ dessertQueue = [...dessertFiles]; shuffle(dessertQueue); }
-function nextDessert(){ if(dessertQueue.length === 0) initDessertQueue(); return dessertQueue.shift(); }
-function stripAndCap(path){ const file = path.split("/").pop().replace(/\.(jpg|jpeg)$/i,"").replace(/_/g," "); return file.replace(/\b\w/g,c=>c.toUpperCase()); }
+/* Helpers */
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } }
+function initQueue(){ dessertQueue = [...dessertFiles]; shuffle(dessertQueue); }
+function nextDessert(){ if(dessertQueue.length===0) initQueue(); return dessertQueue.shift(); }
+function stripCap(path){ if(!path) return ""; const f = path.split("/").pop().replace(/\.(jpg|jpeg)$/i,"").replace(/_/g," "); return f.replace(/\b\w/g,c=>c.toUpperCase()); }
+function showImage(path){ if(!path){ imgEl.style.display="none"; placeholder.style.display="block"; imgEl.src=""; return; } imgEl.src = path; imgEl.style.display="block"; placeholder.style.display="none"; }
 
-/* UI updates and state broadcasting */
-function sendState(){
+/* Send current state to channel */
+function publishState(){
   if (!channel) return;
   const state = {
-    t1, t2, currentDessert, previousDessert,
-    answer: answerEl.textContent,
-    activePlayer, player1Name: player1NameEl.value, player2Name: player2NameEl.value,
-    gameOver
+    t1, t2, activePlayer, firstPress, gameOver,
+    currentDessert, previousDessert,
+    passUsed1, passUsed2,
+    p1Name: p1NameEl.value, p2Name: p2NameEl.value,
+    answer: answerEl.textContent
   };
   channel.publish("update", state);
 }
 
-/* Timer loop */
-function startTickLoop(){
-  if (interval) return;
-  interval = setInterval(()=> {
-    if (!activePlayer) return;
+/* Apply incoming state to UI */
+function applyState(state){
+  // Timers
+  if (typeof state.t1 === "number") { t1 = state.t1; timer1.textContent = t1.toFixed(1); }
+  if (typeof state.t2 === "number") { t2 = state.t2; timer2.textContent = t2.toFixed(1); }
+  // Active player
+  if (typeof state.activePlayer === "number") activePlayer = state.activePlayer;
+  if (typeof state.firstPress === "boolean") firstPress = state.firstPress;
+  if (typeof state.gameOver === "boolean") gameOver = state.gameOver;
+  // Desserts
+  if (typeof state.currentDessert === "string") { currentDessert = state.currentDessert; showImage(currentDessert); }
+  if (typeof state.previousDessert === "string") { previousDessert = state.previousDessert; }
+  // Passes
+  if (typeof state.passUsed1 === "boolean") { passUsed1 = state.passUsed1; pass1.disabled = passUsed1; }
+  if (typeof state.passUsed2 === "boolean") { passUsed2 = state.passUsed2; pass2.disabled = passUsed2; }
+  // Names
+  if (state.p1Name) p1NameEl.value = state.p1Name;
+  if (state.p2Name) p2NameEl.value = state.p2Name;
+  // Answer text
+  if (typeof state.answer === "string") answerEl.textContent = state.answer;
+  // Winner/gameOver handling
+  if (gameOver) {
+    // disable controls (except reset)
+    toggleBtn.disabled = true;
+    pass1.disabled = true;
+    pass2.disabled = true;
+    toggleBtn.classList.add("disabled");
+    pass1.classList.add("disabled");
+    pass2.classList.add("disabled");
+    // ensure reset stays enabled
+    resetBtn.disabled = false; resetBtn.classList.remove("disabled");
+  } else {
+    if (isMaster) {
+      toggleBtn.disabled = false;
+      pass1.disabled = passUsed1;
+      pass2.disabled = passUsed2;
+      toggleBtn.classList.remove("disabled");
+      pass1.classList.remove("disabled");
+      pass2.classList.remove("disabled");
+    } else {
+      // Slave should not be interactive
+      toggleBtn.disabled = true; toggleBtn.classList.add("disabled");
+      pass1.disabled = true; pass1.classList.add("disabled");
+      pass2.disabled = true; pass2.classList.add("disabled");
+    }
+  }
+}
+
+/* Timer tick loop (only master runs the ticking) */
+function startTick(){
+  if (tickInterval) return;
+  tickInterval = setInterval(()=> {
+    if (!activePlayer || gameOver) return;
     if (activePlayer === 1) {
       t1 = Math.max(0, +(t1 - 0.1).toFixed(1));
-      timer1El.textContent = t1.toFixed(1);
-      if (t1 <= 0) finishGame();
+      timer1.textContent = t1.toFixed(1);
+      if (t1 <= 0) concludeGame();
     } else if (activePlayer === 2) {
       t2 = Math.max(0, +(t2 - 0.1).toFixed(1));
-      timer2El.textContent = t2.toFixed(1);
-      if (t2 <= 0) finishGame();
+      timer2.textContent = t2.toFixed(1);
+      if (t2 <= 0) concludeGame();
     }
-    sendState();
+    publishState();
   }, 100);
 }
-function stopTickLoop(){ if(interval){ clearInterval(interval); interval = null; } }
+function stopTick(){ if (tickInterval) { clearInterval(tickInterval); tickInterval = null; } }
 
-function finishGame(){
-  stopTickLoop();
-  activePlayer = 0;
+function concludeGame(){
+  stopTick();
   gameOver = true;
-  // winner is the one with remaining time
-  if (t1 > t2) answerEl.textContent = `${player1NameEl.value} WINS!`;
-  else if (t2 > t1) answerEl.textContent = `${player2NameEl.value} WINS!`;
+  // winner = the player with > 0
+  if (t1 > t2) answerEl.textContent = `${p1NameEl.value} WINS!`;
+  else if (t2 > t1) answerEl.textContent = `${p2NameEl.value} WINS!`;
   else answerEl.textContent = `TIE!`;
-  // disable master button
-  if (isMaster) disableControlsAfterWin();
-  sendState();
-}
-function disableControlsAfterWin(){
-  btn.disabled = true;
-  btn.classList.add('disabled');
-  resetBtn.disabled = true;
-  resetBtn.classList.add('disabled');
+  // disable controls (master still keeps reset active)
+  publishState();
 }
 
-/* Reveal previous dessert name briefly */
-let revealTimeout = null;
-function revealPreviousBriefly(label){
-  if (!label) return;
-  answerEl.textContent = label;
-  if (revealTimeout) clearTimeout(revealTimeout);
-  revealTimeout = setTimeout(()=> {
-    // keep the winner message if gameOver; otherwise clear
-    if (!gameOver) answerEl.textContent = "";
-  }, 2500);
+/* Master interactions */
+const timer1 = document.getElementById("timer1");
+const timer2 = document.getElementById("timer2");
+const pass1 = document.getElementById("pass1");
+const pass2 = document.getElementById("pass2");
+
+// Ensure UI for slave vs master
+if (!isMaster) {
+  // Slave: hide reset, disable interactive controls
+  resetBtn.style.display = "none";
+  toggleBtn.disabled = true; toggleBtn.classList.add("disabled");
+  pass1.disabled = true; pass1.classList.add("disabled");
+  pass2.disabled = true; pass2.classList.add("disabled");
 }
 
-/* Button behavior (master only) */
+/* Master-only event handlers publish state after applying local change */
 if (isMaster) {
-  btn.addEventListener("click", () => {
+  initQueue();
+  // Toggle/Wolfhead button
+  toggleBtn.addEventListener("click", () => {
     if (gameOver) return;
     if (firstPress) {
-      // First press: show first image, start player 1 timer. No reveal.
+      // first press: show first image, start P1 timer, no answer shown
       firstPress = false;
       answerEl.textContent = "";
       currentDessert = nextDessert();
-      imgEl.src = currentDessert;
-      imgEl.style.display = "block";
-      placeholder.style.display = "none";
+      showImage(currentDessert);
       activePlayer = 1;
-      startTickLoop();
-      sendState();
+      startTick();
+      publishState();
       return;
     }
 
-    // Subsequent press: reveal the currentDessert (the image just shown),
-    // then advance to nextDessert and switch active player.
-    const label = currentDessert ? stripAndCap(currentDessert) : "";
-    revealPreviousBriefly(label);
+    // Subsequent presses: reveal the image that was just shown (previous)
+    const reveal = currentDessert ? stripCap(currentDessert) : "";
+    answerEl.textContent = reveal;
 
-    // advance image for next player
+    // Advance to next image for next round
     previousDessert = currentDessert;
     currentDessert = nextDessert();
-    imgEl.src = currentDessert;
-    imgEl.style.display = "block";
-    placeholder.style.display = "none";
+    showImage(currentDessert);
 
-    // toggle active player
-    if (activePlayer === 1) activePlayer = 2;
-    else activePlayer = 1;
+    // Switch active player
+    activePlayer = activePlayer === 1 ? 2 : 1;
 
-    // ensure tick loop running
-    startTickLoop();
-    sendState();
+    // ensure timers running
+    startTick();
+    publishState();
   });
 
-  // Reset (single clears state; double-press within 500ms resets names)
+  // Pass buttons (change image only, do not affect timers or active player)
+  pass1.addEventListener("click", () => {
+    if (gameOver || passUsed1) return;
+    passUsed1 = true;
+    pass1.disabled = true;
+    previousDessert = currentDessert;
+    currentDessert = nextDessert();
+    showImage(currentDessert);
+    publishState();
+  });
+
+  pass2.addEventListener("click", () => {
+    if (gameOver || passUsed2) return;
+    passUsed2 = true;
+    pass2.disabled = true;
+    previousDessert = currentDessert;
+    currentDessert = nextDessert();
+    showImage(currentDessert);
+    publishState();
+  });
+
+  // Reset ALWAYS available on master
   let lastReset = 0;
-  resetBtn.addEventListener("click", ()=> {
+  resetBtn.addEventListener("click", () => {
     const now = Date.now();
     if (now - lastReset <= 500) {
-      // double press -> also reset names
-      player1NameEl.value = "Player 1";
-      player2NameEl.value = "Player 2";
+      // double-press resets names too
+      p1NameEl.value = "Player 1";
+      p2NameEl.value = "Player 2";
     }
     lastReset = now;
 
-    // soft reset game state
-    stopTickLoop();
+    stopTick();
     t1 = 20.0; t2 = 20.0;
-    timer1El.textContent = "20.0";
-    timer2El.textContent = "20.0";
-    firstPress = true;
-    activePlayer = 0;
-    gameOver = false;
-    answerEl.textContent = "";
-    imgEl.src = "";
-    imgEl.style.display = "none";
-    placeholder.style.display = "block";
-    btn.disabled = false;
-    btn.classList.remove('disabled');
-    resetBtn.disabled = false;
-    resetBtn.classList.remove('disabled');
-    initDessertQueue();
-    sendState();
+    timer1.textContent = t1.toFixed(1);
+    timer2.textContent = t2.toFixed(1);
+    activePlayer = 0; firstPress = true; gameOver = false;
+    currentDessert = ""; previousDessert = "";
+    passUsed1 = false; passUsed2 = false;
+    pass1.disabled = false; pass2.disabled = false;
+    showImage(""); answerEl.textContent = "";
+    toggleBtn.disabled = false; toggleBtn.classList.remove("disabled");
+    publishState();
   });
 } else {
-  // Slave mode: hide reset visually and disable toggle (so it cannot be clicked)
-  resetBtn.style.display = "none";
-  // keep toggle visible but disabled to avoid accidental clicks
-  btn.disabled = true;
-  btn.classList.add('disabled');
+  // Slave: initialize queue so local nextDessert() won't accidentally run (but we won't call it)
+  initQueue();
 }
 
-/* Initialize deck and UI */
-initDessertQueue();
-imgEl.style.display = "none";
-placeholder.style.display = "block";
-timer1El.textContent = t1.toFixed(1);
-timer2El.textContent = t2.toFixed(1);
-
-// Subscribe already set up above; ensure we send initial state from master if needed
-if (isMaster) sendState();
+/* final init UI */
+timer1.textContent = t1.toFixed(1);
+timer2.textContent = t2.toFixed(1);
+showImage("");
+publishState(); // master will push initial state; slave will receive it
