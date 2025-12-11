@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SBU – The Floor Game (Slave)</title>
+  <title>SBU – The Floor Game (Master)</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.ably.io/lib/ably.min-1.js"></script>
 </head>
 <body>
 
@@ -31,15 +32,16 @@
     </div>
   </div>
 
-  <!-- Controls: Slave does NOT have reset -->
+  <!-- Controls -->
   <div id="controls">
     <button id="toggle-btn">
       <img src="/seawolves-the-floor/white_wolfhead.png" alt="Start Button">
     </button>
+    <button id="reset-btn">↻</button>
   </div>
 
 </div>
 
-<script src="script_slave.js"></script>
+<script src="script_master.js"></script>
 </body>
 </html>
