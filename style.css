@@ -82,7 +82,7 @@ body {
 
 #toggle-btn img {
   width: 90px;
-  height: auto; /* maintain aspect ratio */
+  height: auto;
   pointer-events: none;
 }
 
