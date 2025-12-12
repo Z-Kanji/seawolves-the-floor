@@ -282,21 +282,50 @@ if (isMaster) {
   initQueue();
 }
 
-/* final init UI */
-timer1.textContent = t1.toFixed(1);
-timer2.textContent = t2.toFixed(1);
-showImage("");
-publishState(); // master will push initial state; slave will receive it
-
-// Apply URL scale parameter to #game-container
-(function() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const scale = parseFloat(urlParams.get('scale') || '1'); // default 1
-  if (scale !== 1) {
-    const container = document.getElementById('game-container');
-    if (container) {
-      container.style.transformOrigin = 'top left';
-      container.style.transform = `scale(${scale})`;
-    }
+// ---------- URL SCALE APPLIER (robust) ----------
+// Place this at the very end of your JS (after all other code).
+(function(){
+  function parseScaleParam() {
+    const p = new URLSearchParams(window.location.search).get('scale');
+    const v = parseFloat(p);
+    if (isNaN(v) || !isFinite(v)) return 1;
+    // clamp to reasonable bounds to avoid accidental breakage
+    return Math.max(0.3, Math.min(1.5, v));
   }
+
+  function applyScaleToContainer(scale) {
+    const container = document.getElementById('game-container') || document.querySelector('#gameWrap') || document.body;
+    if (!container) return false;
+    container.style.transformOrigin = 'top center';
+    container.style.transform = 'scale(' + scale + ')';
+    // optional: ensure it stays visually centered inside the flex body
+    container.style.margin = '0 auto';
+    // ensure no unexpected overflow cropping (safe minimal settings)
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    return true;
+  }
+
+  // Run after DOM ready
+  document.addEventListener('DOMContentLoaded', () => {
+    const scale = parseScaleParam();
+    // immediate attempt
+    applyScaleToContainer(scale);
+
+    // If the container is inserted later (race with other init), watch for it:
+    const observer = new MutationObserver((mutations, obs) => {
+      if (applyScaleToContainer(scale)) {
+        obs.disconnect(); // once applied, stop observing
+      }
+    });
+    observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+
+    // Safety fallback: try re-applying a few times (handles late builds)
+    let tries = 0;
+    const fallback = setInterval(() => {
+      tries++;
+      applyScaleToContainer(scale);
+      if (tries > 12) clearInterval(fallback); // ~6 seconds max
+    }, 500);
+  });
 })();
