@@ -288,15 +288,15 @@ timer2.textContent = t2.toFixed(1);
 showImage("");
 publishState(); // master will push initial state; slave will receive it
 
-// Apply URL scale parameter
+// Apply URL scale parameter to #game-container
 (function() {
   const urlParams = new URLSearchParams(window.location.search);
   const scale = parseFloat(urlParams.get('scale') || '1'); // default 1
   if (scale !== 1) {
-    document.body.style.transformOrigin = 'top left';
-    document.body.style.transform = `scale(${scale})`;
-    document.body.style.width = `calc(100% / ${scale})`;
-    document.body.style.height = `calc(100% / ${scale})`;
-    document.body.style.overflow = 'hidden';
+    const container = document.getElementById('game-container');
+    if (container) {
+      container.style.transformOrigin = 'top left';
+      container.style.transform = `scale(${scale})`;
+    }
   }
 })();
