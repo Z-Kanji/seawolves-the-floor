@@ -80,3 +80,13 @@ body{
 
 /* disabled look */
 button[disabled], button.disabled{ opacity:0.45; pointer-events:none; }
+
+/* Scale entire game page 25% smaller */
+body {
+  transform: scale(0.75);
+  transform-origin: top left;
+  width: calc(100% / 0.75);
+  height: calc(100% / 0.75);
+  overflow: hidden;
+}
+
